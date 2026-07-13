@@ -21,13 +21,21 @@ var TSCPrinter = {
     },
 
     connect: function(host, port) {
+        console.log("TSCPrinter.connect called. host:", host, "port:", port);
         return new Promise((resolve, reject) => {
             if (qz.websocket.isActive()) {
+                console.log("QZ WebSocket is already active.");
                 resolve();
             } else {
                 let options = { host: host || "localhost" };
-                // qz-tray connect expects port to be an object with secure/insecure arrays, or left undefined to use defaults.
-                qz.websocket.connect(options).then(resolve).catch(reject);
+                console.log("Calling qz.websocket.connect with options:", JSON.stringify(options));
+                qz.websocket.connect(options).then(() => {
+                    console.log("QZ WebSocket connection successful.");
+                    resolve();
+                }).catch((err) => {
+                    console.error("QZ WebSocket connection failed:", err);
+                    reject(err);
+                });
             }
         });
     },
