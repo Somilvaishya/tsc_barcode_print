@@ -1,33 +1,18 @@
-### TSC Barcode Print
+# TSC Barcode Print
 
-TSC Barcode Printing via QZ Tray
+A custom Frappe/ERPNext app designed for batch barcode label printing directly from inward/outward stock documents (Purchase Receipt, Stock Entry). It uses **QZ Tray** as a browser-to-printer bridge to send raw **TSPL** commands to locally connected TSC thermal printers.
 
-### Installation
+## Features
+- **Print Dialog Integration**: Injects a "Print Barcodes" button into submitted Purchase Receipts and Stock Entries.
+- **Barcode Generation Tool**: A custom doctype to pre-generate batches and print labels on demand.
+- **Dynamic TSPL Templates**: Uses a "Barcode Template" doctype to store raw TSPL strings with Jinja templating, allowing layout changes without touching the code.
+- **Multi-user RDP Support**: Configured to work with QZ Tray running as a Windows Service, ensuring seamless printing across multiple user profiles.
 
-You can install this app using the [bench](https://github.com/frappe/bench) CLI:
+## Setup Instructions
+1. Install QZ Tray (2.2.x) on the Windows Server and check **"Install as a Windows Service"**.
+2. Install the TSC printer driver and note the exact printer name.
+3. Configure the printer name in **Barcode Settings** inside ERPNext.
+4. Create a **Barcode Template** with your TSPL string.
 
-```bash
-cd $PATH_TO_YOUR_BENCH
-bench get-app $URL_OF_THIS_REPO --branch develop
-bench install-app tsc_barcode_print
-```
-
-### Contributing
-
-This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
-
-```bash
-cd apps/tsc_barcode_print
-pre-commit install
-```
-
-Pre-commit is configured to use the following tools for checking and formatting your code:
-
-- ruff
-- eslint
-- prettier
-- pyupgrade
-
-### License
-
-mit
+## License
+MIT
