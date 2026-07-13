@@ -26,7 +26,7 @@ app_license = "mit"
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/tsc_barcode_print/css/tsc_barcode_print.css"
-# app_include_js = "/assets/tsc_barcode_print/js/tsc_barcode_print.js"
+app_include_js = "/assets/tsc_barcode_print/js/qz_print.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/tsc_barcode_print/css/tsc_barcode_print.css"
@@ -43,7 +43,10 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+    "Purchase Receipt": "public/js/barcode_print_dialog.js",
+    "Stock Entry": "public/js/barcode_print_dialog.js"
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
