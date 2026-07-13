@@ -67,7 +67,18 @@
  "module": "TSC Barcode Print",
  "name": "Barcode Generation Tool",
  "owner": "Administrator",
- "permissions": [],
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  }
+ ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",

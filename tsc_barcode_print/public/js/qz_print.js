@@ -25,7 +25,9 @@ var TSCPrinter = {
             if (qz.websocket.isActive()) {
                 resolve();
             } else {
-                qz.websocket.connect({ host: host, port: port }).then(resolve).catch(reject);
+                let options = { host: host || "localhost" };
+                // qz-tray connect expects port to be an object with secure/insecure arrays, or left undefined to use defaults.
+                qz.websocket.connect(options).then(resolve).catch(reject);
             }
         });
     },
