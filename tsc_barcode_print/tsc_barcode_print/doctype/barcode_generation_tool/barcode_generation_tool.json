@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-13 16:35:52.286531",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "batch_id",
+  "manufacturing_date",
+  "label_qty",
+  "no_of_copies",
+  "barcode_template"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Code",
+   "options": "Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "batch_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Batch ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "manufacturing_date",
+   "fieldtype": "Date",
+   "label": "Manufacturing Date"
+  },
+  {
+   "default": "1",
+   "fieldname": "label_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Label Qty (Value on Label)",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "no_of_copies",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "No. of Copies",
+   "reqd": 1
+  },
+  {
+   "fieldname": "barcode_template",
+   "fieldtype": "Link",
+   "label": "Barcode Template",
+   "options": "Barcode Template",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-07-13 16:36:09.047047",
+ "modified_by": "Administrator",
+ "module": "TSC Barcode Print",
+ "name": "Barcode Generation Tool",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

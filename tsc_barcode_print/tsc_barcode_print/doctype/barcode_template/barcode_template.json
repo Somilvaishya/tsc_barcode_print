@@ -1,0 +1,63 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:template_name",
+ "creation": "2026-07-13 16:35:52.156329",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "template_name",
+  "label_width",
+  "label_height",
+  "raw_tspl"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Template Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "50",
+   "fieldname": "label_width",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label Width (mm)",
+   "reqd": 1
+  },
+  {
+   "default": "25",
+   "fieldname": "label_height",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Label Height (mm)",
+   "reqd": 1
+  },
+  {
+   "description": "Use Jinja tags like {{ item_code }}, {{ batch_no }}, {{ qty }}",
+   "fieldname": "raw_tspl",
+   "fieldtype": "Text",
+   "in_list_view": 1,
+   "label": "Raw TSPL String (Jinja Enabled)",
+   "reqd": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-13 16:36:08.922330",
+ "modified_by": "Administrator",
+ "module": "TSC Barcode Print",
+ "name": "Barcode Template",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
