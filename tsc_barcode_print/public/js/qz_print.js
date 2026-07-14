@@ -20,6 +20,19 @@ var TSCPrinter = {
         document.head.appendChild(script);
     },
 
+    loadJsBarcode: function(callback) {
+        if (window.JsBarcode) {
+            if(callback) callback();
+            return;
+        }
+        var script = document.createElement('script');
+        script.src = "https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js";
+        script.onload = () => {
+            if(callback) callback();
+        };
+        document.head.appendChild(script);
+    },
+
     connect: function(host, port) {
         console.log("TSCPrinter.connect called. host:", host, "port:", port);
         return new Promise((resolve, reject) => {
@@ -118,6 +131,109 @@ var TSCPrinter = {
                     frappe.msgprint("Error fetching Printer Profile: " + err);
                     reject(err);
                 });
+            });
+        });
+    },
+
+    renderPreview: function(container, template_doc, context) {
+        this.loadJsBarcode(() => {
+            container.innerHTML = "";
+            
+            // Scale mm to pixels (e.g. 1mm = 4.5px) for display
+            let scale = 4.5;
+            let width_mm = template_doc.label_width || 50;
+            let height_mm = template_doc.label_height || 30;
+            
+            let width_px = width_mm * scale;
+            let height_px = height_mm * scale;
+            
+            container.style.width = width_px + "px";
+            container.style.height = height_px + "px";
+            container.style.position = "relative";
+            container.style.border = "1px solid #333";
+            container.style.backgroundColor = "#fff";
+            container.style.boxShadow = "0 6px 12px rgba(0,0,0,0.15)";
+            container.style.margin = "0 auto";
+            container.style.overflow = "hidden";
+
+            // Substitute context in TSPL lines
+            let substituted = template_doc.raw_tspl || "";
+            for (let key in context) {
+                let val = context[key] !== undefined && context[key] !== null ? context[key] : "";
+                let regex = new RegExp("{{\\s*" + key + "\\s*}}", "g");
+                substituted = substituted.replace(regex, val);
+            }
+            
+            let lines = substituted.split("\n");
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.startsWith("TEXT")) {
+                    // Format: TEXT x,y,"font",rotation,x_mul,y_mul,"content"
+                    let match = line.match(/TEXT\s+(\d+)\s*,\s*(\d+)\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*"([^"]*)"/);
+                    if (match) {
+                        let x_mm = parseFloat(match[1]) / 8;
+                        let y_mm = parseFloat(match[2]) / 8;
+                        
+                        let left_px = x_mm * scale;
+                        let top_px = y_mm * scale;
+                        let text = match[7];
+                        
+                        let el = document.createElement("div");
+                        el.style.position = "absolute";
+                        el.style.left = left_px + "px";
+                        el.style.top = top_px + "px";
+                        el.style.fontFamily = "monospace";
+                        el.style.fontSize = "12px";
+                        el.style.fontWeight = "bold";
+                        el.style.color = "#000";
+                        el.style.lineHeight = "1";
+                        el.style.whiteSpace = "nowrap";
+                        el.innerText = text;
+                        
+                        container.appendChild(el);
+                    }
+                } else if (line.startsWith("BARCODE")) {
+                    // Format: BARCODE x,y,"code_type",height,human,rotation,narrow,wide,"content"
+                    let match = line.match(/BARCODE\s+(\d+)\s*,\s*(\d+)\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*"([^"]*)"/);
+                    if (match) {
+                        let x_mm = parseFloat(match[1]) / 8;
+                        let y_mm = parseFloat(match[2]) / 8;
+                        let height_mm = parseFloat(match[4]) / 8;
+                        
+                        let left_px = x_mm * scale;
+                        let top_px = y_mm * scale;
+                        let barcode_height_px = height_mm * scale;
+                        let barcode_type = match[3];
+                        let text = match[9];
+                        let show_human = parseInt(match[5]) === 1;
+                        
+                        let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                        svg.style.position = "absolute";
+                        svg.style.left = left_px + "px";
+                        svg.style.top = top_px + "px";
+                        container.appendChild(svg);
+                        
+                        try {
+                            if (text && text.trim() !== "") {
+                                JsBarcode(svg, text, {
+                                    format: barcode_type === "128" ? "CODE128" : "CODE39",
+                                    height: barcode_height_px,
+                                    width: 1.2,
+                                    displayValue: show_human,
+                                    margin: 0,
+                                    fontSize: 10,
+                                    font: "monospace"
+                                });
+                            } else {
+                                // Show placeholder
+                                svg.innerHTML = `<rect width="100" height="${barcode_height_px}" fill="#eee" stroke="#ccc"></rect>
+                                                 <text x="10" y="${barcode_height_px/2 + 3}" font-family="monospace" font-size="9" fill="#999">[No Barcode Value]</text>`;
+                            }
+                        } catch (e) {
+                            console.error("Barcode rendering error:", e);
+                        }
+                    }
+                }
             });
         });
     }
