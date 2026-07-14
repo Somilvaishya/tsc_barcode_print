@@ -113,12 +113,14 @@ var TSCPrinter = {
                                         let data = tspl_res.message.tspl; // Array of commands
                                         
                                         qz.print(config, data).then(() => {
+                                            console.log("TSCPrinter: Print command successfully executed by QZ.");
                                             frappe.show_alert({message: "Printed successfully", indicator: "green"});
                                             
                                             // Auditing: log print action to backend
                                             let source_dt = (window.cur_frm && window.cur_frm.doctype) ? window.cur_frm.doctype : null;
                                             let source_dn = (window.cur_frm && window.cur_frm.docname) ? window.cur_frm.docname : null;
                                             
+                                            console.log("TSCPrinter: Sending print log to backend. Source:", source_dt, source_dn);
                                             frappe.call({
                                                 method: "tsc_barcode_print.api.log_barcode_print",
                                                 args: {
@@ -130,6 +132,12 @@ var TSCPrinter = {
                                                     no_of_copies: no_of_copies,
                                                     source_doctype: source_dt,
                                                     source_docname: source_dn
+                                                },
+                                                callback: function(r) {
+                                                    console.log("TSCPrinter: Print log created successfully. Log Name:", r.message);
+                                                },
+                                                error: function(err) {
+                                                    console.error("TSCPrinter: Failed to create print log. Error:", err);
                                                 }
                                             });
 
