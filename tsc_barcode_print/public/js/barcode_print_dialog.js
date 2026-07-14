@@ -154,7 +154,29 @@ function create_dialog(frm, templates, printers, initial_template, dialog_items)
                 return;
             }
 
-            d.get_primary_btn().prop('disabled', true);
+            // Check for over-printing: if no_of_copies is greater than 2x the item qty (label_qty)
+            let overprinting_warnings = [];
+            items.forEach(row => {
+                if (row.no_of_copies > 0 && row.no_of_copies > row.label_qty * 2) {
+                    overprinting_warnings.push(`${row.item_code} (Copies: ${row.no_of_copies}, Qty: ${row.label_qty})`);
+                }
+            });
+
+            if (overprinting_warnings.length > 0) {
+                frappe.confirm(
+                    __("Warning: You are printing significantly more copies than the item quantities for:<br><b>{0}</b>.<br><br>Are you sure you want to proceed?", [overprinting_warnings.join("<br>")]),
+                    function() {
+                        d.get_primary_btn().prop('disabled', true);
+                        print_row(0);
+                    },
+                    function() {
+                        // User canceled, do nothing
+                    }
+                );
+            } else {
+                d.get_primary_btn().prop('disabled', true);
+                print_row(0);
+            }
             
             // Recursive function to print sequentially
             function print_row(index) {
@@ -183,8 +205,6 @@ function create_dialog(frm, templates, printers, initial_template, dialog_items)
                     print_row(index + 1);
                 }
             }
-
-            print_row(0);
         }
     });
 

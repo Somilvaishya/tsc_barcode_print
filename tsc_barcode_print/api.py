@@ -112,3 +112,60 @@ def get_items_for_barcode_print(doctype, docname):
             })
             
     return items_to_print
+
+@frappe.whitelist()
+def log_barcode_print(template, printer_profile, item_code, batch_no, label_qty, no_of_copies, source_doctype=None, source_docname=None):
+    log = frappe.new_doc("Barcode Print Log")
+    log.print_datetime = frappe.utils.now_datetime()
+    log.printed_by = frappe.session.user
+    log.template = template
+    log.printer_profile = printer_profile
+    log.item_code = item_code
+    log.batch_no = batch_no
+    log.label_qty = flt(label_qty)
+    log.no_of_copies = int(no_of_copies)
+    log.source_doctype = source_doctype
+    log.source_docname = source_docname
+    log.insert(ignore_permissions=True)
+    frappe.db.commit()
+    return log.name
+
+def setup_custom_fields():
+    from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+    create_custom_fields({
+        "Batch": [
+            {
+                "fieldname": "custom_pre_batch_status",
+                "label": "Pre-Batch Status",
+                "fieldtype": "Select",
+                "options": "\nPre-Generated\nConsumed",
+                "default": "",
+                "insert_after": "expiry_date",
+                "read_only": 1
+            }
+        ]
+    })
+
+def on_transaction_submit(doc, method):
+    # Extract all batch numbers from items or serial and batch bundles
+    batches_used = set()
+    for d in doc.get("items") or []:
+        if d.get("batch_no"):
+            batches_used.add(d.batch_no)
+        if d.get("serial_and_batch_bundle"):
+            entries = frappe.get_all(
+                "Serial and Batch Entry",
+                filters={"parent": d.serial_and_batch_bundle},
+                fields=["batch_no"]
+            )
+            for entry in entries:
+                if entry.get("batch_no"):
+                    batches_used.add(entry.get("batch_no"))
+    
+    # Update pre-generated batches to "Consumed"
+    for batch_no in batches_used:
+        if frappe.db.exists("Batch", batch_no):
+            status = frappe.db.get_value("Batch", batch_no, "custom_pre_batch_status")
+            if status == "Pre-Generated":
+                frappe.db.set_value("Batch", batch_no, "custom_pre_batch_status", "Consumed")
+

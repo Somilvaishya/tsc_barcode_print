@@ -85,8 +85,7 @@ doctype_js = {
 # Installation
 # ------------
 
-# before_install = "tsc_barcode_print.install.before_install"
-# after_install = "tsc_barcode_print.install.after_install"
+after_migrate = "tsc_barcode_print.api.setup_custom_fields"
 
 # Uninstallation
 # ------------
@@ -140,13 +139,14 @@ doctype_js = {
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+    "Purchase Receipt": {
+        "on_submit": "tsc_barcode_print.api.on_transaction_submit"
+    },
+    "Stock Entry": {
+        "on_submit": "tsc_barcode_print.api.on_transaction_submit"
+    }
+}
 
 # Scheduled Tasks
 # ---------------

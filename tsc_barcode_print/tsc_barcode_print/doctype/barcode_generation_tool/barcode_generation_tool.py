@@ -9,6 +9,11 @@ class BarcodeGenerationTool(Document):
     def on_submit(self):
         # 1. Create a new Batch if mode is "New Pre-Batch"
         if self.mode == "New Pre-Batch":
+            # Role validation: restrict to Stock Manager or System Manager
+            user_roles = frappe.get_roles()
+            if not ("Stock Manager" in user_roles or "System Manager" in user_roles):
+                frappe.throw("You do not have the required role (Stock Manager or System Manager) to pre-generate Batch IDs.")
+
             if not self.batch_no:
                 frappe.throw("Batch No is required in 'New Pre-Batch' mode.")
                 
@@ -16,6 +21,7 @@ class BarcodeGenerationTool(Document):
                 batch = frappe.new_doc("Batch")
                 batch.batch_id = self.batch_no
                 batch.item = self.item_code
+                batch.custom_pre_batch_status = "Pre-Generated"
                 if self.manufacturing_date:
                     batch.manufacturing_date = self.manufacturing_date
                 if self.expiry_date:

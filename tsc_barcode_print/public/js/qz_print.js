@@ -114,6 +114,25 @@ var TSCPrinter = {
                                         
                                         qz.print(config, data).then(() => {
                                             frappe.show_alert({message: "Printed successfully", indicator: "green"});
+                                            
+                                            // Auditing: log print action to backend
+                                            let source_dt = (window.cur_frm && window.cur_frm.doctype) ? window.cur_frm.doctype : null;
+                                            let source_dn = (window.cur_frm && window.cur_frm.docname) ? window.cur_frm.docname : null;
+                                            
+                                            frappe.call({
+                                                method: "tsc_barcode_print.api.log_barcode_print",
+                                                args: {
+                                                    template: template_name,
+                                                    printer_profile: profile.name,
+                                                    item_code: item_code,
+                                                    batch_no: batch_id,
+                                                    label_qty: label_qty,
+                                                    no_of_copies: no_of_copies,
+                                                    source_doctype: source_dt,
+                                                    source_docname: source_dn
+                                                }
+                                            });
+
                                             resolve();
                                         }).catch((err) => {
                                             frappe.msgprint("Print Error: " + err);

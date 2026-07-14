@@ -30,20 +30,36 @@ frappe.ui.form.on('Barcode Generation Tool', {
                     return;
                 }
 
-                frm.disable_save();
-                window.TSCPrinter.printTSPL(
-                    frm.doc.barcode_template,
-                    frm.doc.item_code,
-                    batch,
-                    frm.doc.manufacturing_date,
-                    frm.doc.label_qty,
-                    frm.doc.no_of_copies,
-                    frm.doc.target_printer
-                ).then(() => {
-                    frm.enable_save();
-                }).catch(() => {
-                    frm.enable_save();
-                });
+                let execute_print = function() {
+                    frm.disable_save();
+                    window.TSCPrinter.printTSPL(
+                        frm.doc.barcode_template,
+                        frm.doc.item_code,
+                        batch,
+                        frm.doc.manufacturing_date,
+                        frm.doc.label_qty,
+                        frm.doc.no_of_copies,
+                        frm.doc.target_printer
+                    ).then(() => {
+                        frm.enable_save();
+                    }).catch(() => {
+                        frm.enable_save();
+                    });
+                };
+
+                if (frm.doc.no_of_copies > 0 && frm.doc.no_of_copies > frm.doc.label_qty * 2) {
+                    frappe.confirm(
+                        __("Warning: You are printing significantly more copies ({0}) than the label quantity ({1}). Are you sure you want to proceed?", [frm.doc.no_of_copies, frm.doc.label_qty]),
+                        function() {
+                            execute_print();
+                        },
+                        function() {
+                            // User canceled
+                        }
+                    );
+                } else {
+                    execute_print();
+                }
             }, __('Actions'));
         }
     },
