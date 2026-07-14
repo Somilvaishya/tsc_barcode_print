@@ -7,18 +7,26 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "details_section",
   "print_datetime",
   "printed_by",
   "template",
   "printer_profile",
+  "col_break",
   "item_code",
   "batch_no",
   "label_qty",
   "no_of_copies",
+  "source_section",
   "source_doctype",
   "source_docname"
  ],
  "fields": [
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Print Details"
+  },
   {
    "fieldname": "print_datetime",
    "fieldtype": "Datetime",
@@ -47,6 +55,10 @@
    "read_only": 1
   },
   {
+   "fieldname": "col_break",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "item_code",
    "fieldtype": "Link",
    "label": "Item Code",
@@ -70,6 +82,11 @@
    "fieldtype": "Int",
    "label": "No. of Copies",
    "read_only": 1
+  },
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source Reference"
   },
   {
    "fieldname": "source_doctype",
