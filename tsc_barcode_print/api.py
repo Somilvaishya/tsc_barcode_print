@@ -18,8 +18,8 @@ def render_barcode_template(template_name, item_code, batch_id, mfg_date=None, l
     
     rendered_tspl = frappe.render_template(template.raw_tspl, context)
     
-    # We must also prepend the size and clear buffer commands
-    header = f"SIZE {template.label_width} mm, {template.label_height} mm\nCLS\n"
+    # We must prepend the size, gap, direction and clear buffer commands in the correct sequence
+    header = f"SIZE {template.label_width} mm, {template.label_height} mm\nGAP 3 mm, 0 mm\nDIRECTION 1\nCLS\n"
     
     # And append the print command
     footer = f"\nPRINT 1,{int(no_of_copies)}\n"
