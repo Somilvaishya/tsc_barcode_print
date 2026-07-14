@@ -6,14 +6,28 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "mode",
   "item_code",
-  "batch_id",
+  "batch_no",
+  "existing_batch",
   "manufacturing_date",
+  "expiry_date",
   "label_qty",
   "no_of_copies",
-  "barcode_template"
+  "barcode_symbology",
+  "barcode_template",
+  "target_printer"
  ],
  "fields": [
+  {
+   "default": "New Pre-Batch",
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Mode",
+   "options": "New Pre-Batch\nExisting Batch",
+   "reqd": 1
+  },
   {
    "fieldname": "item_code",
    "fieldtype": "Link",
@@ -23,16 +37,31 @@
    "reqd": 1
   },
   {
-   "fieldname": "batch_id",
+   "depends_on": "eval:doc.mode == 'New Pre-Batch'",
+   "fieldname": "batch_no",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Batch ID",
-   "reqd": 1
+   "label": "Batch No",
+   "mandatory_depends_on": "eval:doc.mode == 'New Pre-Batch'"
+  },
+  {
+   "depends_on": "eval:doc.mode == 'Existing Batch'",
+   "fieldname": "existing_batch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Existing Batch",
+   "options": "Batch",
+   "mandatory_depends_on": "eval:doc.mode == 'Existing Batch'"
   },
   {
    "fieldname": "manufacturing_date",
    "fieldtype": "Date",
    "label": "Manufacturing Date"
+  },
+  {
+   "fieldname": "expiry_date",
+   "fieldtype": "Date",
+   "label": "Expiry Date"
   },
   {
    "default": "1",
@@ -51,10 +80,25 @@
    "reqd": 1
   },
   {
+   "default": "CODE128",
+   "fieldname": "barcode_symbology",
+   "fieldtype": "Select",
+   "label": "Barcode Symbology",
+   "options": "CODE128\nCODE39",
+   "reqd": 1
+  },
+  {
    "fieldname": "barcode_template",
    "fieldtype": "Link",
    "label": "Barcode Template",
    "options": "Barcode Template",
+   "reqd": 1
+  },
+  {
+   "fieldname": "target_printer",
+   "fieldtype": "Link",
+   "label": "Target Printer",
+   "options": "Printer Profile",
    "reqd": 1
   }
  ],
@@ -62,7 +106,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-07-13 16:36:09.047047",
+ "modified": "2026-07-14 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "TSC Barcode Print",
  "name": "Barcode Generation Tool",

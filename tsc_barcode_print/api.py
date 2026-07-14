@@ -33,12 +33,26 @@ def render_barcode_template(template_name, item_code, batch_id, mfg_date=None, l
 
 @frappe.whitelist()
 def get_printer_settings():
-    settings = frappe.get_single("Barcode Settings")
+    # Deprecated fallback for compatibility
+    profile = get_default_printer_profile()
+    if profile:
+        return {
+            "printer_name": profile.printer_name,
+            "qz_host": "localhost",
+            "qz_port": 8181
+        }
     return {
-        "printer_name": settings.printer_name,
-        "qz_host": settings.qz_host,
-        "qz_port": settings.qz_port
+        "printer_name": "",
+        "qz_host": "localhost",
+        "qz_port": 8181
     }
+
+@frappe.whitelist()
+def get_default_printer_profile():
+    profiles = frappe.get_all("Printer Profile", filters={"is_active": 1}, order_by="creation desc", limit=1)
+    if profiles:
+        return frappe.get_doc("Printer Profile", profiles[0].name)
+    return None
 
 @frappe.whitelist()
 def get_items_for_barcode_print(doctype, docname):

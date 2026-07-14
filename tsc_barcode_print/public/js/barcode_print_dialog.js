@@ -1,7 +1,7 @@
 // Generic script attached to Purchase Receipt and Stock Entry via hooks.py
 
 function inject_barcode_print_button(frm) {
-    // Only show if document is submitted (or maybe even draft? Let's say any status except cancelled)
+    // Only show if document is submitted
     if (frm.doc.docstatus === 2) return;
 
     frm.add_custom_button(__('Print Barcodes'), function() {
@@ -41,26 +41,44 @@ function open_barcode_print_dialog(frm) {
                 return;
             }
 
-            // 2. Fetch items (resolved with bundles) from server
+            // 2. Fetch active printer profiles
             frappe.call({
-                method: "tsc_barcode_print.api.get_items_for_barcode_print",
+                method: "frappe.client.get_list",
                 args: {
-                    doctype: frm.doc.doctype,
-                    docname: frm.doc.name
+                    doctype: "Printer Profile",
+                    filters: { is_active: 1 },
+                    fields: ["name"],
+                    limit_page_length: 0
                 },
-                callback: function(res_items) {
-                    let dialog_items = res_items.message || [];
-                    if (dialog_items.length === 0) {
-                        frappe.msgprint(__('No printable items resolved.'));
+                callback: function(p_res) {
+                    let printers = (p_res.message || []).map(d => d.name);
+                    if (printers.length === 0) {
+                        frappe.msgprint(__('Please configure an active Printer Profile first.'));
                         return;
                     }
 
-                    // 3. Get the first template document detail
-                    frappe.db.get_doc("Barcode Template", templates[0]).then(template_doc => {
-                        // 4. Load JsBarcode and create dialog
-                        load_js_barcode(function() {
-                            create_dialog(frm, templates, template_doc, dialog_items);
-                        });
+                    // 3. Fetch items (resolved with bundles) from server
+                    frappe.call({
+                        method: "tsc_barcode_print.api.get_items_for_barcode_print",
+                        args: {
+                            doctype: frm.doc.doctype,
+                            docname: frm.doc.name
+                        },
+                        callback: function(res_items) {
+                            let dialog_items = res_items.message || [];
+                            if (dialog_items.length === 0) {
+                                frappe.msgprint(__('No printable items resolved.'));
+                                return;
+                            }
+
+                            // 4. Get the first template document detail
+                            frappe.db.get_doc("Barcode Template", templates[0]).then(template_doc => {
+                                // 5. Load JsBarcode and create dialog
+                                load_js_barcode(function() {
+                                    create_dialog(frm, templates, printers, template_doc, dialog_items);
+                                });
+                            });
+                        }
                     });
                 }
             });
@@ -68,7 +86,7 @@ function open_barcode_print_dialog(frm) {
     });
 }
 
-function create_dialog(frm, templates, initial_template, dialog_items) {
+function create_dialog(frm, templates, printers, initial_template, dialog_items) {
     let d = new frappe.ui.Dialog({
         title: 'Print Barcodes',
         fields: [
@@ -88,6 +106,14 @@ function create_dialog(frm, templates, initial_template, dialog_items) {
                         });
                     }
                 }
+            },
+            {
+                fieldname: 'printer_profile',
+                label: 'Printer Profile',
+                fieldtype: 'Select',
+                options: printers,
+                default: printers[0],
+                reqd: 1
             },
             {
                 fieldname: 'layout_section',
@@ -146,7 +172,8 @@ function create_dialog(frm, templates, initial_template, dialog_items) {
                         row.batch_no,
                         row.mfg_date,
                         row.label_qty,
-                        row.no_of_copies
+                        row.no_of_copies,
+                        values.printer_profile
                     ).then(() => {
                         print_row(index + 1);
                     }).catch((err) => {
@@ -275,7 +302,6 @@ function render_tspl_preview(container, template_doc, context) {
             // Format: TEXT x,y,"font",rotation,x_mul,y_mul,"content"
             let match = line.match(/TEXT\s+(\d+)\s*,\s*(\d+)\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*"([^"]*)"/);
             if (match) {
-                // TSPL coordinates are in dots. 203 DPI = 8 dots/mm.
                 let x_mm = parseFloat(match[1]) / 8;
                 let y_mm = parseFloat(match[2]) / 8;
                 

@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "template_name",
+  "printer_language",
   "label_width",
   "label_height",
   "raw_tspl"
@@ -20,6 +21,15 @@
    "label": "Template Name",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "default": "TSPL",
+   "fieldname": "printer_language",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Printer Language",
+   "options": "TSPL\nZPL\nEPL",
+   "reqd": 1
   },
   {
    "default": "50",

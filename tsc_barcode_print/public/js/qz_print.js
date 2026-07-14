@@ -10,7 +10,7 @@ var TSCPrinter = {
             return;
         }
 
-        // Dynamically load qz-tray.js from CDN for MVP
+        // Dynamically load qz-tray.js from CDN
         var script = document.createElement('script');
         script.src = "https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.min.js";
         script.onload = () => {
@@ -40,18 +40,44 @@ var TSCPrinter = {
         });
     },
 
-    printTSPL: function(template_name, item_code, batch_id, mfg_date, label_qty, no_of_copies) {
+    printTSPL: function(template_name, item_code, batch_id, mfg_date, label_qty, no_of_copies, printer_profile_name = null) {
         return new Promise((resolve, reject) => {
             this.loadQz(() => {
-                // Fetch settings first
-                frappe.call({
-                    method: "tsc_barcode_print.api.get_printer_settings",
-                    callback: (r) => {
-                        if (!r.message) return reject("Could not fetch printer settings");
-                        let settings = r.message;
-                        
-                        this.connect(settings.qz_host, settings.qz_port).then(() => {
-                            // Fetch rendered TSPL
+                // 1. Determine which printer profile to use
+                let profile_promise;
+                if (printer_profile_name) {
+                    profile_promise = frappe.db.get_doc("Printer Profile", printer_profile_name);
+                } else {
+                    profile_promise = frappe.call({
+                        method: "tsc_barcode_print.api.get_default_printer_profile"
+                    }).then(r => r.message);
+                }
+
+                profile_promise.then(profile => {
+                    if (!profile) {
+                        let err = "No active Printer Profile found. Please configure one in 'Printer Profile' list.";
+                        frappe.msgprint(err);
+                        return reject(err);
+                    }
+
+                    // 2. Fetch the template details to validate language
+                    frappe.db.get_doc("Barcode Template", template_name).then(template => {
+                        if (!template) {
+                            let err = "Template not found: " + template_name;
+                            frappe.msgprint(err);
+                            return reject(err);
+                        }
+
+                        // Validate printer language matches template language
+                        if (template.printer_language && profile.printer_language && template.printer_language !== profile.printer_language) {
+                            let err = `Language Mismatch: Cannot send a ${template.printer_language} template to a ${profile.printer_language} printer.`;
+                            frappe.msgprint(err);
+                            return reject(err);
+                        }
+
+                        // 3. Connect to QZ Tray
+                        this.connect("localhost").then(() => {
+                            // 4. Fetch rendered code from server
                             frappe.call({
                                 method: "tsc_barcode_print.api.render_barcode_template",
                                 args: {
@@ -63,8 +89,14 @@ var TSCPrinter = {
                                     no_of_copies: no_of_copies
                                 },
                                 callback: (tspl_res) => {
-                                    if(tspl_res.message && tspl_res.message.tspl) {
-                                        let config = qz.configs.create(settings.printer_name);
+                                    if (tspl_res.message && tspl_res.message.tspl) {
+                                        let config;
+                                        if (profile.connection_type === "Network IP" && profile.ip_address) {
+                                            config = qz.configs.create({ host: profile.ip_address, port: 9100 });
+                                        } else {
+                                            config = qz.configs.create(profile.printer_name);
+                                        }
+
                                         let data = tspl_res.message.tspl; // Array of commands
                                         
                                         qz.print(config, data).then(() => {
@@ -81,7 +113,10 @@ var TSCPrinter = {
                             frappe.msgprint("Failed to connect to QZ Tray. Is it running?<br>" + err);
                             reject(err);
                         });
-                    }
+                    });
+                }).catch(err => {
+                    frappe.msgprint("Error fetching Printer Profile: " + err);
+                    reject(err);
                 });
             });
         });
