@@ -7,15 +7,22 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "conn_section",
   "printer_name",
   "connection_type",
   "ip_address",
+  "col_break_1",
   "printer_language",
   "default_template",
-  "is_active",
-  "warehouse"
+  "warehouse",
+  "is_active"
  ],
  "fields": [
+  {
+   "fieldname": "conn_section",
+   "fieldtype": "Section Break",
+   "label": "Printer Configuration"
+  },
   {
    "fieldname": "printer_name",
    "fieldtype": "Data",
@@ -40,6 +47,10 @@
    "label": "IP Address"
   },
   {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
    "default": "TSPL",
    "fieldname": "printer_language",
    "fieldtype": "Select",
@@ -55,23 +66,23 @@
    "options": "Barcode Template"
   },
   {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse / Location",
+   "options": "Warehouse"
+  },
+  {
    "default": "1",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
    "label": "Is Active"
-  },
-  {
-   "fieldname": "warehouse",
-   "fieldtype": "Link",
-   "label": "Warehouse / Location",
-   "options": "Warehouse"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-14 12:00:00.000000",
+ "modified": "2026-07-15 10:40:00.000000",
  "modified_by": "Administrator",
  "module": "TSC Barcode Print",
  "name": "Printer Profile",

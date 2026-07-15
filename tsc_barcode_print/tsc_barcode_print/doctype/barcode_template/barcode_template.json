@@ -7,13 +7,21 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "template_details_section",
   "template_name",
   "printer_language",
+  "col_break_1",
   "label_width",
   "label_height",
+  "raw_code_section",
   "raw_tspl"
  ],
  "fields": [
+  {
+   "fieldname": "template_details_section",
+   "fieldtype": "Section Break",
+   "label": "Template Specifications"
+  },
   {
    "fieldname": "template_name",
    "fieldtype": "Data",
@@ -32,6 +40,10 @@
    "reqd": 1
   },
   {
+   "fieldname": "col_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
    "default": "50",
    "fieldname": "label_width",
    "fieldtype": "Data",
@@ -48,18 +60,23 @@
    "reqd": 1
   },
   {
-   "description": "Use Jinja tags like {{ item_code }}, {{ batch_no }}, {{ qty }}",
+   "fieldname": "raw_code_section",
+   "fieldtype": "Section Break",
+   "label": "Raw Printing Code"
+  },
+  {
+   "description": "Use Jinja tags like {{ item_code }}, {{ batch_id }}, {{ qty }}",
    "fieldname": "raw_tspl",
    "fieldtype": "Text",
    "in_list_view": 1,
-   "label": "Raw TSPL String (Jinja Enabled)",
+   "label": "Raw Command Code (Jinja Enabled)",
    "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-13 16:36:08.922330",
+ "modified": "2026-07-15 10:40:00.000000",
  "modified_by": "Administrator",
  "module": "TSC Barcode Print",
  "name": "Barcode Template",

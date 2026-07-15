@@ -1,0 +1,86 @@
+{
+ "charts": [
+  {
+   "chart_name": "Prints per Day",
+   "label": "Prints per Day"
+  }
+ ],
+ "content": "[{\"id\": \"hdr-onboarding\", \"type\": \"header\", \"data\": {\"text\": \"TSC Barcode Printing Hub\", \"col\": 12, \"level\": 3}}, {\"id\": \"txt-onboarding\", \"type\": \"markdown\", \"data\": {\"text\": \"Welcome to the TSC Barcode Print module. Manage your printer profiles, templates, pre-batch code generations, and audit printing logs here.\", \"col\": 12}}, {\"id\": \"sp-0\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"hdr-shortcuts\", \"type\": \"header\", \"data\": {\"text\": \"Quick Actions\", \"col\": 12, \"level\": 5}}, {\"id\": \"sc-gen\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Barcode Generation Tool\", \"col\": 3}}, {\"id\": \"sc-profile\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Printer Profile\", \"col\": 3}}, {\"id\": \"sc-template\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Barcode Template\", \"col\": 3}}, {\"id\": \"sc-log\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Barcode Print Log\", \"col\": 3}}, {\"id\": \"sc-rep\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Barcode Print Summary\", \"col\": 3}}, {\"id\": \"sp-1\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"hdr-cards\", \"type\": \"header\", \"data\": {\"text\": \"Performance Metrics\", \"col\": 12, \"level\": 5}}, {\"id\": \"nc-today\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Labels Printed Today\", \"col\": 3}}, {\"id\": \"nc-month\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Prints This Month\", \"col\": 3}}, {\"id\": \"nc-pre\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Pre-Generated Batches Pending\", \"col\": 3}}, {\"id\": \"nc-active\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Active Printer Profiles\", \"col\": 3}}, {\"id\": \"sp-2\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"hdr-chart\", \"type\": \"header\", \"data\": {\"text\": \"Print Logs Analysis\", \"col\": 12, \"level\": 5}}, {\"id\": \"ch-history\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Prints per Day\", \"col\": 12}}]",
+ "creation": "2026-07-15 11:13:02.695625",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "barcode",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "TSC Barcode Print",
+ "links": [],
+ "modified": "2026-07-15 11:13:02.695625",
+ "modified_by": "Administrator",
+ "module": "TSC Barcode Print",
+ "name": "TSC Barcode Print",
+ "number_cards": [
+  {
+   "label": "Labels Printed Today",
+   "number_card_name": "Labels Printed Today"
+  },
+  {
+   "label": "Total Prints This Month",
+   "number_card_name": "Total Prints This Month"
+  },
+  {
+   "label": "Pre-Generated Batches Pending",
+   "number_card_name": "Pre-Generated Batches Pending"
+  },
+  {
+   "label": "Active Printer Profiles",
+   "number_card_name": "Active Printer Profiles"
+  }
+ ],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 0.0,
+ "shortcuts": [
+  {
+   "doc_view": "",
+   "icon": "add",
+   "label": "Barcode Generation Tool",
+   "link_to": "Barcode Generation Tool",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "icon": "print",
+   "label": "Printer Profile",
+   "link_to": "Printer Profile",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "icon": "file-text",
+   "label": "Barcode Template",
+   "link_to": "Barcode Template",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "icon": "history",
+   "label": "Barcode Print Log",
+   "link_to": "Barcode Print Log",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "icon": "chart-bar",
+   "label": "Barcode Print Summary",
+   "link_to": "Barcode Print Summary",
+   "report_ref_doctype": "Barcode Print Log",
+   "type": "Report"
+  }
+ ],
+ "title": "TSC Barcode Print"
+}

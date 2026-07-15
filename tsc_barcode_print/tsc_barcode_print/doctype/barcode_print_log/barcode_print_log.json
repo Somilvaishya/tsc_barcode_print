@@ -30,12 +30,14 @@
   {
    "fieldname": "print_datetime",
    "fieldtype": "Datetime",
+   "in_list_view": 1,
    "label": "Print Datetime",
    "read_only": 1
   },
   {
    "fieldname": "printed_by",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Printed By",
    "options": "User",
    "read_only": 1
@@ -50,6 +52,7 @@
   {
    "fieldname": "printer_profile",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Printer Profile",
    "options": "Printer Profile",
    "read_only": 1
@@ -61,6 +64,7 @@
   {
    "fieldname": "item_code",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "label": "Item Code",
    "options": "Item",
    "read_only": 1
@@ -68,6 +72,7 @@
   {
    "fieldname": "batch_no",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Batch No",
    "read_only": 1
   },
@@ -80,6 +85,7 @@
   {
    "fieldname": "no_of_copies",
    "fieldtype": "Int",
+   "in_list_view": 1,
    "label": "No. of Copies",
    "read_only": 1
   },
@@ -103,7 +109,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-14 17:35:00.000000",
+ "modified": "2026-07-15 10:40:00.000000",
  "modified_by": "Administrator",
  "module": "TSC Barcode Print",
  "name": "Barcode Print Log",

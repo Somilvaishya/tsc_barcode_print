@@ -1,4 +1,5 @@
 import frappe
+import json
 from frappe.utils import nowdate, flt
 
 @frappe.whitelist()
@@ -145,6 +146,150 @@ def setup_custom_fields():
             }
         ]
     })
+    
+    # Auto-initialize Workspace, Number Cards, and Dashboard Charts in the DB
+    try:
+        create_number_cards()
+        create_dashboard_charts()
+        create_workspace()
+    except Exception as e:
+        frappe.log_error(f"Failed to auto-create workspace elements: {str(e)}", "TSC Barcode Setup Error")
+
+def create_number_cards():
+    cards = [
+        {
+            "name": "Labels Printed Today",
+            "label": "Labels Printed Today",
+            "document_type": "Barcode Print Log",
+            "function": "Sum",
+            "aggregate_function_based_on": "no_of_copies",
+            "filters_json": '[["Barcode Print Log","print_datetime","Timespan","today",false]]'
+        },
+        {
+            "name": "Total Prints This Month",
+            "label": "Total Prints This Month",
+            "document_type": "Barcode Print Log",
+            "function": "Sum",
+            "aggregate_function_based_on": "no_of_copies",
+            "filters_json": '[["Barcode Print Log","print_datetime","Timespan","this month",false]]'
+        },
+        {
+            "name": "Pre-Generated Batches Pending",
+            "label": "Pre-Generated Batches Pending",
+            "document_type": "Batch",
+            "function": "Count",
+            "filters_json": '[["Batch","custom_pre_batch_status","=","Pre-Generated",false]]'
+        },
+        {
+            "name": "Active Printer Profiles",
+            "label": "Active Printer Profiles",
+            "document_type": "Printer Profile",
+            "function": "Count",
+            "filters_json": '[["Printer Profile","is_active","=","1",false]]'
+        }
+    ]
+    
+    for c in cards:
+        if not frappe.db.exists("Number Card", c["name"]):
+            card = frappe.new_doc("Number Card")
+            card.update(c)
+            card.is_standard = 1
+            card.module = "TSC Barcode Print"
+            card.insert(ignore_permissions=True)
+        else:
+            card = frappe.get_doc("Number Card", c["name"])
+            card.update(c)
+            card.save(ignore_permissions=True)
+
+def create_dashboard_charts():
+    charts = [
+        {
+            "chart_name": "Prints per Day",
+            "chart_type": "Sum",
+            "document_type": "Barcode Print Log",
+            "based_on": "print_datetime",
+            "value_based_on": "no_of_copies",
+            "timespan": "Last Month",
+            "time_interval": "Daily",
+            "type": "Bar",
+            "is_public": 1,
+            "timeseries": 1,
+            "filters_json": "[]"
+        }
+    ]
+    
+    for ch in charts:
+        if not frappe.db.exists("Dashboard Chart", ch["chart_name"]):
+            chart = frappe.new_doc("Dashboard Chart")
+            chart.update(ch)
+            chart.is_standard = 1
+            chart.module = "TSC Barcode Print"
+            chart.insert(ignore_permissions=True)
+        else:
+            chart = frappe.get_doc("Dashboard Chart", ch["chart_name"])
+            chart.update(ch)
+            chart.save(ignore_permissions=True)
+
+def create_workspace():
+    ws_name = "TSC Barcode Print"
+    ws_content = json.dumps([
+        {"id":"hdr-onboarding","type":"header","data":{"text":"TSC Barcode Printing Hub","col":12,"level":3}},
+        {"id":"txt-onboarding","type":"markdown","data":{"text":"Welcome to the TSC Barcode Print module. Manage your printer profiles, templates, pre-batch code generations, and audit printing logs here.","col":12}},
+        {"id":"sp-0","type":"spacer","data":{"col":12}},
+        {"id":"hdr-shortcuts","type":"header","data":{"text":"Quick Actions","col":12,"level":5}},
+        {"id":"sc-gen","type":"shortcut","data":{"shortcut_name":"Barcode Generation Tool","col":3}},
+        {"id":"sc-profile","type":"shortcut","data":{"shortcut_name":"Printer Profile","col":3}},
+        {"id":"sc-template","type":"shortcut","data":{"shortcut_name":"Barcode Template","col":3}},
+        {"id":"sc-log","type":"shortcut","data":{"shortcut_name":"Barcode Print Log","col":3}},
+        {"id":"sc-rep","type":"shortcut","data":{"shortcut_name":"Barcode Print Summary","col":3}},
+        {"id":"sp-1","type":"spacer","data":{"col":12}},
+        {"id":"hdr-cards","type":"header","data":{"text":"Performance Metrics","col":12,"level":5}},
+        {"id":"nc-today","type":"number_card","data":{"number_card_name":"Labels Printed Today","col":3}},
+        {"id":"nc-month","type":"number_card","data":{"number_card_name":"Total Prints This Month","col":3}},
+        {"id":"nc-pre","type":"number_card","data":{"number_card_name":"Pre-Generated Batches Pending","col":3}},
+        {"id":"nc-active","type":"number_card","data":{"number_card_name":"Active Printer Profiles","col":3}},
+        {"id":"sp-2","type":"spacer","data":{"col":12}},
+        {"id":"hdr-chart","type":"header","data":{"text":"Print Logs Analysis","col":12,"level":5}},
+        {"id":"ch-history","type":"chart","data":{"chart_name":"Prints per Day","col":12}}
+    ])
+    
+    if frappe.db.exists("Workspace", ws_name):
+        ws = frappe.get_doc("Workspace", ws_name)
+        ws.set("shortcuts", [])
+        ws.set("number_cards", [])
+        ws.set("charts", [])
+    else:
+        ws = frappe.new_doc("Workspace")
+        ws.name = ws_name
+        ws.label = ws_name
+        ws.title = ws_name
+        
+    ws.icon = "barcode"
+    ws.indicator_color = "green"
+    ws.module = "TSC Barcode Print"
+    ws.category = "Modules"
+    ws.public = 1
+    ws.is_standard = 1
+    ws.content = ws_content
+    
+    # Add shortcuts
+    ws.append("shortcuts", {"type": "DocType", "link_to": "Barcode Generation Tool", "label": "Barcode Generation Tool", "icon": "add"})
+    ws.append("shortcuts", {"type": "DocType", "link_to": "Printer Profile", "label": "Printer Profile", "icon": "print"})
+    ws.append("shortcuts", {"type": "DocType", "link_to": "Barcode Template", "label": "Barcode Template", "icon": "file-text"})
+    ws.append("shortcuts", {"type": "DocType", "link_to": "Barcode Print Log", "label": "Barcode Print Log", "icon": "history"})
+    ws.append("shortcuts", {"type": "Report", "link_to": "Barcode Print Summary", "label": "Barcode Print Summary", "icon": "chart-bar", "report_ref_doctype": "Barcode Print Log"})
+    
+    # Add number cards
+    ws.append("number_cards", {"number_card_name": "Labels Printed Today", "label": "Labels Printed Today"})
+    ws.append("number_cards", {"number_card_name": "Total Prints This Month", "label": "Total Prints This Month"})
+    ws.append("number_cards", {"number_card_name": "Pre-Generated Batches Pending", "label": "Pre-Generated Batches Pending"})
+    ws.append("number_cards", {"number_card_name": "Active Printer Profiles", "label": "Active Printer Profiles"})
+    
+    # Add charts
+    ws.append("charts", {"chart_name": "Prints per Day", "label": "Prints per Day"})
+    
+    ws.save(ignore_permissions=True)
+    frappe.db.commit()
 
 def on_transaction_submit(doc, method):
     # Extract all batch numbers from items or serial and batch bundles

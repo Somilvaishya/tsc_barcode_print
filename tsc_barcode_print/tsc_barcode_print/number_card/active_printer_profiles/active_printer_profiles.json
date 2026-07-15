@@ -1,0 +1,23 @@
+{
+ "creation": "2026-07-15 11:06:35.747394",
+ "currency": "INR",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "document_type": "Printer Profile",
+ "filters_json": "[[\"Printer Profile\",\"is_active\",\"=\",\"1\",false]]",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 0,
+ "is_standard": 1,
+ "label": "Active Printer Profiles",
+ "modified": "2026-07-15 11:19:42.124909",
+ "modified_by": "Administrator",
+ "module": "TSC Barcode Print",
+ "name": "Active Printer Profiles",
+ "owner": "Administrator",
+ "report_function": "Sum",
+ "show_full_number": 0,
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Document Type"
+}

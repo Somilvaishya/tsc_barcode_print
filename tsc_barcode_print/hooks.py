@@ -4,6 +4,9 @@ app_publisher = "Somil"
 app_description = "TSC Barcode Printing via QZ Tray"
 app_email = "somil@example.com"
 app_license = "mit"
+app_logo_url = "/assets/tsc_barcode_print/images/logo.png"
+app_color = "green"
+app_icon = "barcode"
 
 # Apps
 # ------------------
