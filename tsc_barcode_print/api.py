@@ -264,7 +264,7 @@ def create_workspace():
         ws.label = ws_name
         ws.title = ws_name
         
-    ws.icon = "barcode"
+    ws.icon = "printer"
     ws.indicator_color = "green"
     ws.module = "TSC Barcode Print"
     ws.category = "Modules"
