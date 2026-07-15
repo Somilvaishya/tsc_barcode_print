@@ -196,7 +196,7 @@ var TSCPrinter = {
                 line = line.trim();
                 if (line.startsWith("TEXT")) {
                     // Format: TEXT x,y,"font",rotation,x_mul,y_mul,"content"
-                    let match = line.match(/TEXT\s+(\d+)\s*,\s*(\d+)\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*"([^"]*)"/);
+                    let match = line.match(/TEXT\s+(\d+)\s*,\s*(\d+)\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*"([^"]*)"/);
                     if (match) {
                         let x_mm = parseFloat(match[1]) / 8;
                         let y_mm = parseFloat(match[2]) / 8;
@@ -216,6 +216,30 @@ var TSCPrinter = {
                         el.style.lineHeight = "1";
                         el.style.whiteSpace = "nowrap";
                         el.innerText = text;
+                        
+                        container.appendChild(el);
+                    }
+                } else if (line.startsWith("BAR ")) {
+                    // Format: BAR x,y,width,height
+                    let match = line.match(/BAR\s+(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+                    if (match) {
+                        let x_mm = parseFloat(match[1]) / 8;
+                        let y_mm = parseFloat(match[2]) / 8;
+                        let w_mm = parseFloat(match[3]) / 8;
+                        let h_mm = parseFloat(match[4]) / 8;
+                        
+                        let left_px = x_mm * scale;
+                        let top_px = y_mm * scale;
+                        let width_px = w_mm * scale;
+                        let height_px = h_mm * scale;
+                        
+                        let el = document.createElement("div");
+                        el.style.position = "absolute";
+                        el.style.left = left_px + "px";
+                        el.style.top = top_px + "px";
+                        el.style.width = width_px + "px";
+                        el.style.height = height_px + "px";
+                        el.style.backgroundColor = "#000";
                         
                         container.appendChild(el);
                     }
