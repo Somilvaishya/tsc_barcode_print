@@ -234,7 +234,7 @@ def create_workspace():
     ws_name = "TSC Barcode Print"
     ws_content = json.dumps([
         {"id":"hdr-onboarding","type":"header","data":{"text":"TSC Barcode Printing Hub","col":12,"level":3}},
-        {"id":"txt-onboarding","type":"markdown","data":{"text":"Welcome to the TSC Barcode Print module. Manage your printer profiles, templates, pre-batch code generations, and audit printing logs here.","col":12}},
+        {"id":"txt-onboarding","type":"paragraph","data":{"text":"Welcome to the TSC Barcode Print module. Manage your printer profiles, templates, pre-batch code generations, and audit printing logs here.","col":12}},
         {"id":"sp-0","type":"spacer","data":{"col":12}},
         {"id":"hdr-shortcuts","type":"header","data":{"text":"Quick Actions","col":12,"level":5}},
         {"id":"sc-gen","type":"shortcut","data":{"shortcut_name":"Barcode Generation Tool","col":3}},
