@@ -1,0 +1,24 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Barcode Template",
+  "label_height": "150",
+  "label_width": "100",
+  "modified": "2026-07-15 12:24:29.797008",
+  "name": "100x150mm TSPL",
+  "printer_language": "TSPL",
+  "raw_tspl": "TEXT 40,80,\"4\",0,2.5,2.5,\"{{ item_code }}\"\nBAR 40,200,720,6\nTEXT 40,250,\"4\",0,2,2,\"Batch No: {{ batch_id }}\"\nTEXT 40,360,\"3\",0,2,2,\"Mfg Date: {{ manufacturing_date }}\"\nTEXT 40,470,\"3\",0,2,2,\"Quantity: {{ qty }}\"\nBAR 40,580,720,6\nBARCODE 40,640,\"128\",300,0,0,4,8,\"{{ batch_id }}\"\nBAR 40,980,720,6\nTEXT 220,1030,\"4\",0,2,2,\"{{ batch_id }}\"\n",
+  "template_name": "100x150mm TSPL"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Barcode Template",
+  "label_height": "50",
+  "label_width": "100",
+  "modified": "2026-07-15 12:24:29.665384",
+  "name": "100x50mm TSPL",
+  "printer_language": "TSPL",
+  "raw_tspl": "TEXT 40,40,\"3\",0,2,2,\"{{ item_code }}\"\nBAR 40,100,720,4\nTEXT 40,120,\"3\",0,1.2,1.2,\"Batch: {{ batch_id }}\"\nTEXT 40,175,\"3\",0,1,1,\"Mfg Date: {{ manufacturing_date }}\"\nTEXT 480,175,\"3\",0,1,1,\"Qty: {{ qty }}\"\nBAR 40,215,720,4\nBARCODE 40,235,\"128\",80,0,0,3,6,\"{{ batch_id }}\"\nTEXT 250,335,\"3\",0,1.2,1.2,\"{{ batch_id }}\"\n",
+  "template_name": "100x50mm TSPL"
+ }
+]

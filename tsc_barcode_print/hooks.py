@@ -8,6 +8,15 @@ app_logo_url = "/assets/tsc_barcode_print/images/logo.png"
 app_color = "green"
 app_icon = "barcode"
 
+fixtures = [
+    {
+        "doctype": "Barcode Template",
+        "filters": [
+            ["template_name", "in", ["100x50mm TSPL", "100x150mm TSPL"]]
+        ]
+    }
+]
+
 # Apps
 # ------------------
 
