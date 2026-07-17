@@ -51,10 +51,9 @@
   },
   {
    "fieldname": "printer_profile",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Printer Profile",
-   "options": "Printer Profile",
    "read_only": 1
   },
   {

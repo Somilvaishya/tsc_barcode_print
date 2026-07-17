@@ -1,5 +1,7 @@
 import frappe
 import json
+import os
+import base64
 from frappe.utils import nowdate, flt
 
 @frappe.whitelist()
@@ -35,13 +37,6 @@ def render_barcode_template(template_name, item_code, batch_id, mfg_date=None, l
 @frappe.whitelist()
 def get_printer_settings():
     # Deprecated fallback for compatibility
-    profile = get_default_printer_profile()
-    if profile:
-        return {
-            "printer_name": profile.printer_name,
-            "qz_host": "localhost",
-            "qz_port": 8181
-        }
     return {
         "printer_name": "",
         "qz_host": "localhost",
@@ -50,10 +45,49 @@ def get_printer_settings():
 
 @frappe.whitelist()
 def get_default_printer_profile():
-    profiles = frappe.get_all("Printer Profile", filters={"is_active": 1}, order_by="creation desc", limit=1)
-    if profiles:
-        return frappe.get_doc("Printer Profile", profiles[0].name)
     return None
+
+# ─────────────────────────────────────────────────────────────────────────────
+# QZ Tray Certificate Authentication
+# Eliminates the "Action Required / Untrusted Website" popup for all users.
+# The private key signs every QZ connection request server-side.
+# ─────────────────────────────────────────────────────────────────────────────
+
+@frappe.whitelist(allow_guest=False)
+def get_qz_certificate():
+    """Return the public certificate so QZ Tray can verify our signatures."""
+    cert_path = os.path.join(
+        frappe.get_app_path('tsc_barcode_print'), 'qz_cert.pem'
+    )
+    if not os.path.exists(cert_path):
+        frappe.throw('QZ Tray certificate not found. Run setup first.')
+    with open(cert_path, 'r') as f:
+        return f.read()
+
+@frappe.whitelist(allow_guest=False)
+def sign_qz_message(message):
+    """Sign a QZ Tray authentication challenge with our private key."""
+    try:
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import padding
+    except ImportError:
+        frappe.throw('cryptography package not available. Run: pip install cryptography')
+
+    key_path = os.path.join(
+        frappe.get_app_path('tsc_barcode_print'), 'qz_private.pem'
+    )
+    if not os.path.exists(key_path):
+        frappe.throw('QZ Tray private key not found.')
+
+    with open(key_path, 'rb') as f:
+        private_key = serialization.load_pem_private_key(f.read(), password=None)
+
+    signature = private_key.sign(
+        message.encode('utf-8'),
+        padding.PKCS1v15(),
+        hashes.SHA512()
+    )
+    return base64.b64encode(signature).decode('utf-8')
 
 @frappe.whitelist()
 def get_items_for_barcode_print(doctype, docname):
@@ -179,13 +213,6 @@ def create_number_cards():
             "document_type": "Batch",
             "function": "Count",
             "filters_json": '[["Batch","custom_pre_batch_status","=","Pre-Generated",false]]'
-        },
-        {
-            "name": "Active Printer Profiles",
-            "label": "Active Printer Profiles",
-            "document_type": "Printer Profile",
-            "function": "Count",
-            "filters_json": '[["Printer Profile","is_active","=","1",false]]'
         }
     ]
     
@@ -234,20 +261,18 @@ def create_workspace():
     ws_name = "TSC Barcode Print"
     ws_content = json.dumps([
         {"id":"hdr-onboarding","type":"header","data":{"text":"TSC Barcode Printing Hub","col":12,"level":3}},
-        {"id":"txt-onboarding","type":"paragraph","data":{"text":"Welcome to the TSC Barcode Print module. Manage your printer profiles, templates, pre-batch code generations, and audit printing logs here.","col":12}},
+        {"id":"txt-onboarding","type":"paragraph","data":{"text":"Welcome to the TSC Barcode Print module. Manage your templates, pre-batch code generations, and audit printing logs here.","col":12}},
         {"id":"sp-0","type":"spacer","data":{"col":12}},
         {"id":"hdr-shortcuts","type":"header","data":{"text":"Quick Actions","col":12,"level":5}},
         {"id":"sc-gen","type":"shortcut","data":{"shortcut_name":"Barcode Generation Tool","col":3}},
-        {"id":"sc-profile","type":"shortcut","data":{"shortcut_name":"Printer Profile","col":3}},
         {"id":"sc-template","type":"shortcut","data":{"shortcut_name":"Barcode Template","col":3}},
         {"id":"sc-log","type":"shortcut","data":{"shortcut_name":"Barcode Print Log","col":3}},
         {"id":"sc-rep","type":"shortcut","data":{"shortcut_name":"Barcode Print Summary","col":3}},
         {"id":"sp-1","type":"spacer","data":{"col":12}},
         {"id":"hdr-cards","type":"header","data":{"text":"Performance Metrics","col":12,"level":5}},
-        {"id":"nc-today","type":"number_card","data":{"number_card_name":"Labels Printed Today","col":3}},
-        {"id":"nc-month","type":"number_card","data":{"number_card_name":"Total Prints This Month","col":3}},
-        {"id":"nc-pre","type":"number_card","data":{"number_card_name":"Pre-Generated Batches Pending","col":3}},
-        {"id":"nc-active","type":"number_card","data":{"number_card_name":"Active Printer Profiles","col":3}},
+        {"id":"nc-today","type":"number_card","data":{"number_card_name":"Labels Printed Today","col":4}},
+        {"id":"nc-month","type":"number_card","data":{"number_card_name":"Total Prints This Month","col":4}},
+        {"id":"nc-pre","type":"number_card","data":{"number_card_name":"Pre-Generated Batches Pending","col":4}},
         {"id":"sp-2","type":"spacer","data":{"col":12}},
         {"id":"hdr-chart","type":"header","data":{"text":"Print Logs Analysis","col":12,"level":5}},
         {"id":"ch-history","type":"chart","data":{"chart_name":"Prints per Day","col":12}}
@@ -274,7 +299,6 @@ def create_workspace():
     
     # Add shortcuts
     ws.append("shortcuts", {"type": "DocType", "link_to": "Barcode Generation Tool", "label": "Barcode Generation Tool", "icon": "add"})
-    ws.append("shortcuts", {"type": "DocType", "link_to": "Printer Profile", "label": "Printer Profile", "icon": "print"})
     ws.append("shortcuts", {"type": "DocType", "link_to": "Barcode Template", "label": "Barcode Template", "icon": "file-text"})
     ws.append("shortcuts", {"type": "DocType", "link_to": "Barcode Print Log", "label": "Barcode Print Log", "icon": "history"})
     ws.append("shortcuts", {"type": "Report", "link_to": "Barcode Print Summary", "label": "Barcode Print Summary", "icon": "chart-bar", "report_ref_doctype": "Barcode Print Log"})
@@ -283,7 +307,6 @@ def create_workspace():
     ws.append("number_cards", {"number_card_name": "Labels Printed Today", "label": "Labels Printed Today"})
     ws.append("number_cards", {"number_card_name": "Total Prints This Month", "label": "Total Prints This Month"})
     ws.append("number_cards", {"number_card_name": "Pre-Generated Batches Pending", "label": "Pre-Generated Batches Pending"})
-    ws.append("number_cards", {"number_card_name": "Active Printer Profiles", "label": "Active Printer Profiles"})
     
     # Add charts
     ws.append("charts", {"chart_name": "Prints per Day", "label": "Prints per Day"})

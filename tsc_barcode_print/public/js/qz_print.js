@@ -1,12 +1,16 @@
 // Public JS for TSC Barcode Print via QZ Tray
+// Multi-user safe: each browser session has its own TSCPrinter instance.
+// QZ Tray handles job queuing independently per printer — no cross-user conflicts.
 
 var TSCPrinter = {
-    qzLoaded: false,
+    qzLoaded:    false,
+    _printing:   false,   // Per-session print lock — prevents double-click double-print
 
     loadQz: function(callback) {
         if (window.qz) {
-            this.qzLoaded = true;
-            if(callback) callback();
+            // QZ already loaded — just ensure security is configured
+            this._setup_qz_security();
+            if (callback) callback();
             return;
         }
 
@@ -15,10 +19,41 @@ var TSCPrinter = {
         script.src = "https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.min.js";
         script.onload = () => {
             this.qzLoaded = true;
-            if(callback) callback();
+            // Configure certificate auth BEFORE any connection attempt
+            this._setup_qz_security();
+            if (callback) callback();
         };
         document.head.appendChild(script);
     },
+
+    // ── Certificate-based auth — eliminates "Untrusted Website" popup ─────────
+    _setup_qz_security: function() {
+        if (this._security_configured) return;
+        this._security_configured = true;
+
+        // 1. Provide our public certificate to QZ Tray
+        qz.security.setCertificatePromise(function(resolve, reject) {
+            frappe.call({
+                method:   'tsc_barcode_print.api.get_qz_certificate',
+                callback: function(r) { resolve(r.message || ''); },
+                error:    function()  { resolve(''); }  // fallback: show popup
+            });
+        });
+
+        // 2. Sign every QZ authentication challenge with our private key (server-side)
+        qz.security.setSignatureAlgorithm('SHA512');
+        qz.security.setSignaturePromise(function(toSign) {
+            return function(resolve, reject) {
+                frappe.call({
+                    method:   'tsc_barcode_print.api.sign_qz_message',
+                    args:     { message: toSign },
+                    callback: function(r) { resolve(r.message || ''); },
+                    error:    function(e) { reject(e); }
+                });
+            };
+        });
+    },
+    // ─────────────────────────────────────────────────────────────────────────
 
     loadJsBarcode: function(callback) {
         if (window.JsBarcode) {
@@ -53,109 +88,103 @@ var TSCPrinter = {
         });
     },
 
-    printTSPL: function(template_name, item_code, batch_id, mfg_date, label_qty, no_of_copies, printer_profile_name = null) {
+    printTSPL: function(template_name, item_code, batch_id, mfg_date, label_qty, no_of_copies, printer_name = null) {
         return new Promise((resolve, reject) => {
-            this.loadQz(() => {
-                // 1. Determine which printer profile to use
-                let profile_promise;
-                if (printer_profile_name) {
-                    profile_promise = frappe.db.get_doc("Printer Profile", printer_profile_name);
-                } else {
-                    profile_promise = frappe.call({
-                        method: "tsc_barcode_print.api.get_default_printer_profile"
-                    }).then(r => r.message);
-                }
 
-                profile_promise.then(profile => {
-                    if (!profile) {
-                        let err = "No active Printer Profile found. Please configure one in 'Printer Profile' list.";
-                        frappe.msgprint(err);
-                        return reject(err);
+            // ── Per-session double-click guard ────────────────────────────────
+            if (this._printing) {
+                frappe.show_alert({ message: __('Print already in progress, please wait…'), indicator: 'orange' }, 4);
+                return reject('Print already in progress');
+            }
+            this._printing = true;
+            const release_lock = () => { this._printing = false; };
+
+            this.loadQz(() => {
+                // Resolve printer: use explicitly passed name, else fall back to default
+                let get_printer = printer_name
+                    ? Promise.resolve(printer_name)
+                    : qz.printers.getDefault().then(p => p || qz.printers.find().then(all => all[0]));
+
+                get_printer.then(active_printer => {
+                    if (!active_printer) {
+                        release_lock();
+                        frappe.msgprint(__('No printer selected or found. Please select a printer.'));
+                        return reject('No printer');
                     }
 
-                    // 2. Fetch the template details to validate language
-                    frappe.db.get_doc("Barcode Template", template_name).then(template => {
-                        if (!template) {
-                            let err = "Template not found: " + template_name;
-                            frappe.msgprint(err);
-                            return reject(err);
-                        }
+                    // Connect to QZ Tray (localhost — QZ runs on THIS machine/session)
+                    this.connect('localhost').then(() => {
 
-                        // Validate printer language matches template language
-                        if (template.printer_language && profile.printer_language && template.printer_language !== profile.printer_language) {
-                            let err = `Language Mismatch: Cannot send a ${template.printer_language} template to a ${profile.printer_language} printer.`;
-                            frappe.msgprint(err);
-                            return reject(err);
-                        }
-
-                        // 3. Connect to QZ Tray
-                        this.connect("localhost").then(() => {
-                            // 4. Fetch rendered code from server
-                            frappe.call({
-                                method: "tsc_barcode_print.api.render_barcode_template",
-                                args: {
-                                    template_name: template_name,
-                                    item_code: item_code,
-                                    batch_id: batch_id,
-                                    mfg_date: mfg_date,
-                                    label_qty: label_qty,
-                                    no_of_copies: no_of_copies
-                                },
-                                callback: (tspl_res) => {
-                                    if (tspl_res.message && tspl_res.message.tspl) {
-                                        let config;
-                                        if (profile.connection_type === "Network IP" && profile.ip_address) {
-                                            config = qz.configs.create({ host: profile.ip_address, port: 9100 });
-                                        } else {
-                                            config = qz.configs.create(profile.printer_name);
-                                        }
-
-                                        let data = tspl_res.message.tspl; // Array of commands
-                                        
-                                        qz.print(config, data).then(() => {
-                                            console.log("TSCPrinter: Print command successfully executed by QZ.");
-                                            frappe.show_alert({message: "Printed successfully", indicator: "green"});
-                                            
-                                            // Auditing: log print action to backend
-                                            let source_dt = (window.cur_frm && window.cur_frm.doctype) ? window.cur_frm.doctype : null;
-                                            let source_dn = (window.cur_frm && window.cur_frm.docname) ? window.cur_frm.docname : null;
-                                            
-                                            console.log("TSCPrinter: Sending print log to backend. Source:", source_dt, source_dn);
-                                            frappe.call({
-                                                method: "tsc_barcode_print.api.log_barcode_print",
-                                                args: {
-                                                    template: template_name,
-                                                    printer_profile: profile.name,
-                                                    item_code: item_code,
-                                                    batch_no: batch_id,
-                                                    label_qty: label_qty,
-                                                    no_of_copies: no_of_copies,
-                                                    source_doctype: source_dt,
-                                                    source_docname: source_dn
-                                                },
-                                                callback: function(r) {
-                                                    console.log("TSCPrinter: Print log created successfully. Log Name:", r.message);
-                                                },
-                                                error: function(err) {
-                                                    console.error("TSCPrinter: Failed to create print log. Error:", err);
-                                                }
-                                            });
-
-                                            resolve();
-                                        }).catch((err) => {
-                                            frappe.msgprint("Print Error: " + err);
-                                            reject(err);
-                                        });
-                                    }
+                        // Fetch rendered TSPL from server
+                        frappe.call({
+                            method: 'tsc_barcode_print.api.render_barcode_template',
+                            args: {
+                                template_name: template_name,
+                                item_code:     item_code,
+                                batch_id:      batch_id,
+                                mfg_date:      mfg_date,
+                                label_qty:     label_qty,
+                                no_of_copies:  no_of_copies
+                            },
+                            callback: (tspl_res) => {
+                                if (!tspl_res.message || !tspl_res.message.tspl) {
+                                    release_lock();
+                                    return reject('Empty TSPL response');
                                 }
-                            });
-                        }).catch((err) => {
-                            frappe.msgprint("Failed to connect to QZ Tray. Is it running?<br>" + err);
-                            reject(err);
+
+                                let config = qz.configs.create(active_printer);
+                                let data   = tspl_res.message.tspl;
+
+                                qz.print(config, data).then(() => {
+                                    release_lock();
+                                    frappe.show_alert({ message: __('✓ Printed to {0}', [active_printer]), indicator: 'green' }, 5);
+
+                                    // ── Audit log (fire-and-forget, non-blocking) ─────
+                                    let source_dt = window.cur_frm ? window.cur_frm.doctype  : null;
+                                    let source_dn = window.cur_frm ? window.cur_frm.docname  : null;
+
+                                    frappe.call({
+                                        method: 'tsc_barcode_print.api.log_barcode_print',
+                                        args: {
+                                            template:        template_name,
+                                            printer_profile: active_printer,
+                                            item_code:       item_code,
+                                            batch_no:        batch_id,
+                                            label_qty:       label_qty,
+                                            no_of_copies:    no_of_copies,
+                                            source_doctype:  source_dt,
+                                            source_docname:  source_dn
+                                        }
+                                    });
+                                    // ─────────────────────────────────────────────────
+
+                                    resolve();
+
+                                }).catch((err) => {
+                                    release_lock();
+                                    frappe.msgprint(__('Print Error: {0}', [String(err)]));
+                                    reject(err);
+                                });
+                            },
+                            error: (err) => {
+                                release_lock();
+                                frappe.msgprint(__('Server error rendering template: {0}', [String(err)]));
+                                reject(err);
+                            }
                         });
+
+                    }).catch((err) => {
+                        release_lock();
+                        frappe.msgprint(__(
+                            'Cannot connect to QZ Tray on this machine.<br>' +
+                            '<b>Ensure QZ Tray is running on this computer.</b><br><small>{0}</small>', [String(err)]
+                        ));
+                        reject(err);
                     });
-                }).catch(err => {
-                    frappe.msgprint("Error fetching Printer Profile: " + err);
+
+                }).catch((err) => {
+                    release_lock();
+                    frappe.msgprint(__('Error resolving printer: {0}', [String(err)]));
                     reject(err);
                 });
             });
