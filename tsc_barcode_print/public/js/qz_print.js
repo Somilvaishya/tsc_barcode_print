@@ -233,32 +233,12 @@ var TSCPrinter = {
     },
 
     _renderZPL: function(container, zpl, width_mm, height_mm) {
-        container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;font-size:12px;">Loading ZPL from Labelary...</div>';
-        
         let width_inch = (width_mm / 25.4).toFixed(2);
         let height_inch = (height_mm / 25.4).toFixed(2);
-        let url = `http://api.labelary.com/v1/printers/8dpmm/labels/${width_inch}x${height_inch}/0/`;
+        let zpl_encoded = encodeURIComponent(zpl);
+        let url = `http://api.labelary.com/v1/printers/8dpmm/labels/${width_inch}x${height_inch}/0/${zpl_encoded}`;
         
-        fetch(url, {
-            method: 'POST',
-            body: zpl,
-            headers: { 
-                'Accept': 'image/png',
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        })
-        .then(response => {
-            if (!response.ok) throw new Error("Labelary API error");
-            return response.blob();
-        })
-        .then(blob => {
-            let img_url = URL.createObjectURL(blob);
-            container.innerHTML = `<img src="${img_url}" style="width:100%;height:100%;object-fit:contain;" />`;
-        })
-        .catch(err => {
-            console.error(err);
-            container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:red;font-size:12px;text-align:center;">Failed to render ZPL.<br>Check internet connection.</div>';
-        });
+        container.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:contain;" onerror="this.outerHTML='<div style=\\\'color:red;padding:20px;text-align:center;\\\'>Failed to load ZPL Preview. URL might be too long or network error.</div>'" />`;
     },
 
     _renderEPL: function(container, epl, scale) {
