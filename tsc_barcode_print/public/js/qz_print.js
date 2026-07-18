@@ -242,7 +242,10 @@ var TSCPrinter = {
         fetch(url, {
             method: 'POST',
             body: zpl,
-            headers: { 'Accept': 'image/png' }
+            headers: { 
+                'Accept': 'image/png',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
         })
         .then(response => {
             if (!response.ok) throw new Error("Labelary API error");
