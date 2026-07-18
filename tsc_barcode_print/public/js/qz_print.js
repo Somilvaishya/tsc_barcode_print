@@ -212,109 +212,222 @@ var TSCPrinter = {
             container.style.margin = "0 auto";
             container.style.overflow = "hidden";
 
-            // Substitute context in TSPL lines
-            let substituted = template_doc.raw_tspl || "";
+            // Substitute context in raw code
+            let raw_code = template_doc.raw_tspl || "";
             for (let key in context) {
                 let val = context[key] !== undefined && context[key] !== null ? context[key] : "";
                 let regex = new RegExp("{{\\s*" + key + "\\s*}}", "g");
-                substituted = substituted.replace(regex, val);
+                raw_code = raw_code.replace(regex, val);
             }
             
-            let lines = substituted.split("\n");
-            lines.forEach(line => {
-                line = line.trim();
-                if (line.startsWith("TEXT")) {
-                    // Format: TEXT x,y,"font",rotation,x_mul,y_mul,"content"
-                    let match = line.match(/TEXT\s+(\d+)\s*,\s*(\d+)\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*"([^"]*)"/);
-                    if (match) {
-                        let x_mm = parseFloat(match[1]) / 8;
-                        let y_mm = parseFloat(match[2]) / 8;
-                        
-                        let left_px = x_mm * scale;
-                        let top_px = y_mm * scale;
-                        let text = match[7];
-                        
-                        let el = document.createElement("div");
-                        el.style.position = "absolute";
-                        el.style.left = left_px + "px";
-                        el.style.top = top_px + "px";
-                        el.style.fontFamily = "monospace";
-                        el.style.fontSize = "12px";
-                        el.style.fontWeight = "bold";
-                        el.style.color = "#000";
-                        el.style.lineHeight = "1";
-                        el.style.whiteSpace = "nowrap";
-                        el.innerText = text;
-                        
-                        container.appendChild(el);
-                    }
-                } else if (line.startsWith("BAR ")) {
-                    // Format: BAR x,y,width,height
-                    let match = line.match(/BAR\s+(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-                    if (match) {
-                        let x_mm = parseFloat(match[1]) / 8;
-                        let y_mm = parseFloat(match[2]) / 8;
-                        let w_mm = parseFloat(match[3]) / 8;
-                        let h_mm = parseFloat(match[4]) / 8;
-                        
-                        let left_px = x_mm * scale;
-                        let top_px = y_mm * scale;
-                        let width_px = w_mm * scale;
-                        let height_px = h_mm * scale;
-                        
-                        let el = document.createElement("div");
-                        el.style.position = "absolute";
-                        el.style.left = left_px + "px";
-                        el.style.top = top_px + "px";
-                        el.style.width = width_px + "px";
-                        el.style.height = height_px + "px";
-                        el.style.backgroundColor = "#000";
-                        
-                        container.appendChild(el);
-                    }
-                } else if (line.startsWith("BARCODE")) {
-                    // Format: BARCODE x,y,"code_type",height,human,rotation,narrow,wide,"content"
-                    let match = line.match(/BARCODE\s+(\d+)\s*,\s*(\d+)\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*"([^"]*)"/);
-                    if (match) {
-                        let x_mm = parseFloat(match[1]) / 8;
-                        let y_mm = parseFloat(match[2]) / 8;
-                        let height_mm = parseFloat(match[4]) / 8;
-                        
-                        let left_px = x_mm * scale;
-                        let top_px = y_mm * scale;
-                        let barcode_height_px = height_mm * scale;
-                        let barcode_type = match[3];
-                        let text = match[9];
-                        let show_human = parseInt(match[5]) === 1;
-                        
-                        let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                        svg.style.position = "absolute";
-                        svg.style.left = left_px + "px";
-                        svg.style.top = top_px + "px";
-                        container.appendChild(svg);
-                        
-                        try {
-                            if (text && text.trim() !== "") {
-                                JsBarcode(svg, text, {
-                                    format: barcode_type === "128" ? "CODE128" : "CODE39",
-                                    height: barcode_height_px,
-                                    width: 1.2,
-                                    displayValue: show_human,
-                                    margin: 0,
-                                    fontSize: 10,
-                                    font: "monospace"
-                                });
-                            } else {
-                                // Show placeholder
-                                svg.innerHTML = `<rect width="100" height="${barcode_height_px}" fill="#eee" stroke="#ccc"></rect>
-                                                 <text x="10" y="${barcode_height_px/2 + 3}" font-family="monospace" font-size="9" fill="#999">[No Barcode Value]</text>`;
-                            }
-                        } catch (e) {
-                            console.error("Barcode rendering error:", e);
+            let language = template_doc.printer_language || "TSPL";
+            
+            if (language === "ZPL") {
+                this._renderZPL(container, raw_code, width_mm, height_mm);
+            } else if (language === "EPL") {
+                this._renderEPL(container, raw_code, scale);
+            } else {
+                this._renderTSPL(container, raw_code, scale);
+            }
+        });
+    },
+
+    _renderZPL: function(container, zpl, width_mm, height_mm) {
+        container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;font-size:12px;">Loading ZPL from Labelary...</div>';
+        
+        let width_inch = (width_mm / 25.4).toFixed(2);
+        let height_inch = (height_mm / 25.4).toFixed(2);
+        let url = `http://api.labelary.com/v1/printers/8dpmm/labels/${width_inch}x${height_inch}/0/`;
+        
+        fetch(url, {
+            method: 'POST',
+            body: zpl,
+            headers: { 'Accept': 'image/png' }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("Labelary API error");
+            return response.blob();
+        })
+        .then(blob => {
+            let img_url = URL.createObjectURL(blob);
+            container.innerHTML = `<img src="${img_url}" style="width:100%;height:100%;object-fit:contain;" />`;
+        })
+        .catch(err => {
+            console.error(err);
+            container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:red;font-size:12px;text-align:center;">Failed to render ZPL.<br>Check internet connection.</div>';
+        });
+    },
+
+    _renderEPL: function(container, epl, scale) {
+        let lines = epl.split("\n");
+        lines.forEach(line => {
+            line = line.trim();
+            if (line.startsWith("A")) {
+                let match = line.match(/^A(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\w\d]+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*[N,R,B,W]\s*,\s*"([^"]*)"/i);
+                if (match) {
+                    let x_px = parseFloat(match[1]) / 8 * scale;
+                    let y_px = parseFloat(match[2]) / 8 * scale;
+                    let text = match[7];
+                    
+                    let el = document.createElement("div");
+                    el.style.position = "absolute";
+                    el.style.left = x_px + "px";
+                    el.style.top = y_px + "px";
+                    el.style.fontFamily = "monospace";
+                    el.style.fontSize = "12px";
+                    el.style.fontWeight = "bold";
+                    el.style.color = "#000";
+                    el.style.lineHeight = "1";
+                    el.style.whiteSpace = "nowrap";
+                    el.innerText = text;
+                    container.appendChild(el);
+                }
+            } else if (line.startsWith("LO") || line.startsWith("LE")) {
+                let match = line.match(/^L[OE](\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+                if (match) {
+                    let x_px = parseFloat(match[1]) / 8 * scale;
+                    let y_px = parseFloat(match[2]) / 8 * scale;
+                    let w_px = parseFloat(match[3]) / 8 * scale;
+                    let h_px = parseFloat(match[4]) / 8 * scale;
+                    
+                    let el = document.createElement("div");
+                    el.style.position = "absolute";
+                    el.style.left = x_px + "px";
+                    el.style.top = y_px + "px";
+                    el.style.width = w_px + "px";
+                    el.style.height = h_px + "px";
+                    el.style.backgroundColor = "#000";
+                    container.appendChild(el);
+                }
+            } else if (line.startsWith("B")) {
+                let match = line.match(/^B(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\w\d]+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*[B,N]\s*,\s*"([^"]*)"/i);
+                if (match) {
+                    let x_px = parseFloat(match[1]) / 8 * scale;
+                    let y_px = parseFloat(match[2]) / 8 * scale;
+                    let height_px = parseFloat(match[7]) / 8 * scale;
+                    let type = match[4];
+                    let text = match[8];
+                    
+                    let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    svg.style.position = "absolute";
+                    svg.style.left = x_px + "px";
+                    svg.style.top = y_px + "px";
+                    container.appendChild(svg);
+                    
+                    try {
+                        if (text && text.trim() !== "") {
+                            JsBarcode(svg, text, {
+                                format: (type === "1" || type.includes("128")) ? "CODE128" : "CODE39",
+                                height: height_px,
+                                width: 1.2,
+                                displayValue: true,
+                                margin: 0,
+                                fontSize: 10,
+                                font: "monospace"
+                            });
+                        } else {
+                            svg.innerHTML = `<rect width="100" height="${height_px}" fill="#eee" stroke="#ccc"></rect>
+                                             <text x="10" y="${height_px/2 + 3}" font-family="monospace" font-size="9" fill="#999">[No Barcode]</text>`;
                         }
+                    } catch (e) {
+                        console.error("Barcode rendering error:", e);
                     }
                 }
-            });
+            }
+        });
+    },
+
+    _renderTSPL: function(container, lines_text, scale) {
+        let lines = lines_text.split("\n");
+        lines.forEach(line => {
+            line = line.trim();
+            if (line.startsWith("TEXT")) {
+                let match = line.match(/TEXT\s+(\d+)\s*,\s*(\d+)\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*"([^"]*)"/);
+                if (match) {
+                    let x_mm = parseFloat(match[1]) / 8;
+                    let y_mm = parseFloat(match[2]) / 8;
+                    
+                    let left_px = x_mm * scale;
+                    let top_px = y_mm * scale;
+                    let text = match[7];
+                    
+                    let el = document.createElement("div");
+                    el.style.position = "absolute";
+                    el.style.left = left_px + "px";
+                    el.style.top = top_px + "px";
+                    el.style.fontFamily = "monospace";
+                    el.style.fontSize = "12px";
+                    el.style.fontWeight = "bold";
+                    el.style.color = "#000";
+                    el.style.lineHeight = "1";
+                    el.style.whiteSpace = "nowrap";
+                    el.innerText = text;
+                    
+                    container.appendChild(el);
+                }
+            } else if (line.startsWith("BAR ")) {
+                let match = line.match(/BAR\s+(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+                if (match) {
+                    let x_mm = parseFloat(match[1]) / 8;
+                    let y_mm = parseFloat(match[2]) / 8;
+                    let w_mm = parseFloat(match[3]) / 8;
+                    let h_mm = parseFloat(match[4]) / 8;
+                    
+                    let left_px = x_mm * scale;
+                    let top_px = y_mm * scale;
+                    let width_px = w_mm * scale;
+                    let height_px = h_mm * scale;
+                    
+                    let el = document.createElement("div");
+                    el.style.position = "absolute";
+                    el.style.left = left_px + "px";
+                    el.style.top = top_px + "px";
+                    el.style.width = width_px + "px";
+                    el.style.height = height_px + "px";
+                    el.style.backgroundColor = "#000";
+                    
+                    container.appendChild(el);
+                }
+            } else if (line.startsWith("BARCODE")) {
+                let match = line.match(/BARCODE\s+(\d+)\s*,\s*(\d+)\s*,\s*"([^"]+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*"([^"]*)"/);
+                if (match) {
+                    let x_mm = parseFloat(match[1]) / 8;
+                    let y_mm = parseFloat(match[2]) / 8;
+                    let height_mm = parseFloat(match[4]) / 8;
+                    
+                    let left_px = x_mm * scale;
+                    let top_px = y_mm * scale;
+                    let barcode_height_px = height_mm * scale;
+                    let barcode_type = match[3];
+                    let text = match[9];
+                    let show_human = parseInt(match[5]) === 1;
+                    
+                    let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    svg.style.position = "absolute";
+                    svg.style.left = left_px + "px";
+                    svg.style.top = top_px + "px";
+                    container.appendChild(svg);
+                    
+                    try {
+                        if (text && text.trim() !== "") {
+                            JsBarcode(svg, text, {
+                                format: barcode_type === "128" ? "CODE128" : "CODE39",
+                                height: barcode_height_px,
+                                width: 1.2,
+                                displayValue: show_human,
+                                margin: 0,
+                                fontSize: 10,
+                                font: "monospace"
+                            });
+                        } else {
+                            svg.innerHTML = `<rect width="100" height="${barcode_height_px}" fill="#eee" stroke="#ccc"></rect>
+                                             <text x="10" y="${barcode_height_px/2 + 3}" font-family="monospace" font-size="9" fill="#999">[No Barcode]</text>`;
+                        }
+                    } catch (e) {
+                        console.error("Barcode rendering error:", e);
+                    }
+                }
+            }
         });
     }
 };

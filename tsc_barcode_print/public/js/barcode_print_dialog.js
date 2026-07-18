@@ -214,7 +214,9 @@ function create_dialog(frm, templates, printers, initial_template, dialog_items)
             no_of_copies:       row.no_of_copies || 1
         };
 
-        render_tspl_preview($w.find('.tspl-preview-container')[0], d._template_doc, context);
+        if (window.TSCPrinter && typeof window.TSCPrinter.renderPreview === 'function') {
+            window.TSCPrinter.renderPreview($w.find('.tspl-preview-container')[0], d._template_doc, context);
+        }
     }
 
     // ── Event bindings ────────────────────────────────────────────────────────
@@ -271,90 +273,7 @@ function print_sequential(values, items, index, dialog) {
     });
 }
 
-// ── TSPL → HTML preview renderer ─────────────────────────────────────────────
 
-function render_tspl_preview(container, template_doc, context) {
-    if (!container) return;
-    container.innerHTML = '';
-
-    const scale     = 4.5;   // 1 dot ≈ 0.125 mm at 203 DPI; we scale dots for preview
-    const width_px  = (template_doc.label_width  || 50) * scale;
-    const height_px = (template_doc.label_height || 30) * scale;
-
-    Object.assign(container.style, {
-        width:           width_px  + 'px',
-        height:          height_px + 'px',
-        position:        'relative',
-        border:          '1px solid #333',
-        backgroundColor: '#fff',
-        boxShadow:       '0 4px 12px rgba(0,0,0,.15)',
-        margin:          '0 auto',
-        overflow:        'hidden'
-    });
-
-    // Substitute context variables
-    let tspl = template_doc.raw_tspl || '';
-    Object.entries(context).forEach(([k, v]) => {
-        tspl = tspl.replace(new RegExp('{{\\s*' + k + '\\s*}}', 'g'), v !== undefined ? v : '');
-    });
-
-    tspl.split('\n').forEach(line => {
-        line = line.trim();
-
-        // TEXT x,y,"font",rotation,x_mul,y_mul,"content"
-        const text_m = line.match(/^TEXT\s+(\d+)\s*,\s*(\d+)\s*,"([^"]*)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,"([^"]*)"/);
-        if (text_m) {
-            const el = document.createElement('div');
-            Object.assign(el.style, {
-                position:   'absolute',
-                left:       (parseFloat(text_m[1]) / 8 * scale) + 'px',
-                top:        (parseFloat(text_m[2]) / 8 * scale) + 'px',
-                fontFamily: 'monospace',
-                fontSize:   '11px',
-                fontWeight: 'bold',
-                color:      '#000',
-                whiteSpace: 'nowrap'
-            });
-            el.innerText = text_m[7];
-            container.appendChild(el);
-            return;
-        }
-
-        // BARCODE x,y,"type",height,human,rotation,narrow,wide,"content"
-        const bar_m = line.match(/^BARCODE\s+(\d+)\s*,\s*(\d+)\s*,"([^"]*)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,"([^"]*)"/);
-        if (bar_m) {
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            Object.assign(svg.style, {
-                position: 'absolute',
-                left:     (parseFloat(bar_m[1]) / 8 * scale) + 'px',
-                top:      (parseFloat(bar_m[2]) / 8 * scale) + 'px'
-            });
-            container.appendChild(svg);
-
-            const barcode_val   = bar_m[9];
-            const barcode_h_px  = parseFloat(bar_m[4]) / 8 * scale;
-            const show_human    = parseInt(bar_m[5]) === 1;
-            const barcode_type  = bar_m[3];
-
-            if (barcode_val && barcode_val.trim()) {
-                try {
-                    JsBarcode(svg, barcode_val, {
-                        format:       barcode_type === '128' ? 'CODE128' : (barcode_type === 'QRCODE' ? 'CODE128' : 'CODE39'),
-                        height:       barcode_h_px,
-                        width:        1.2,
-                        displayValue: show_human,
-                        margin:       0,
-                        fontSize:     10,
-                        font:         'monospace'
-                    });
-                } catch (e) { console.warn('Barcode render error:', e); }
-            } else {
-                svg.innerHTML = `<rect width="100" height="${barcode_h_px}" fill="#eee" stroke="#ccc"/>
-                                 <text x="8" y="${barcode_h_px / 2 + 4}" font-family="monospace" font-size="9" fill="#999">[barcode]</text>`;
-            }
-        }
-    });
-}
 
 // ── Bind to doctypes ──────────────────────────────────────────────────────────
 
