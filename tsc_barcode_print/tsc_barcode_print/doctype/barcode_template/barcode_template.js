@@ -51,15 +51,42 @@ frappe.ui.form.on('Barcode Template', {
 
         if (!wrapper.find('.tspl-preview-container').length) {
             wrapper.html(`
-                <div style="
-                    padding:16px;background:#f8f9fa;border-radius:8px;
-                    border:2px dashed #dee2e6;display:flex;flex-direction:column;
-                    align-items:center;min-height:220px;
-                ">
-                    <p style="font-size:11px;color:#6c757d;margin-bottom:12px;">Live Preview</p>
-                    <div class="tspl-preview-container"></div>
+                <div class="barcode-preview-wrapper" style="margin-top: -5px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                        <div style="font-weight: 600; font-size: 13px; color: #1f272e;">
+                            <i class="fa fa-image text-muted" style="margin-right: 4px;"></i> Live Preview
+                        </div>
+                        <div style="font-size: 11px; color: #007bff; background: #e6f2ff; padding: 3px 8px; border-radius: 12px; font-weight: 500;">
+                            <i class="fa fa-bolt" style="margin-right:3px;"></i> Auto-updating
+                        </div>
+                    </div>
+                    <div class="preview-canvas" style="
+                        background-color: #e2e8f0;
+                        background-image: linear-gradient(45deg, #cbd5e1 25%, transparent 25%, transparent 75%, #cbd5e1 75%, #cbd5e1), linear-gradient(45deg, #cbd5e1 25%, transparent 25%, transparent 75%, #cbd5e1 75%, #cbd5e1);
+                        background-size: 20px 20px;
+                        background-position: 0 0, 10px 10px;
+                        border: 1px solid #ced4da;
+                        border-radius: 8px;
+                        padding: 30px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 320px;
+                        overflow: auto;
+                        box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+                    ">
+                        <div class="tspl-preview-container" style="transition: all 0.3s ease;"></div>
+                    </div>
                 </div>
             `);
+            
+            // Adjust the raw code textarea height to match the preview height nicely
+            setTimeout(() => {
+                let $textarea = frm.fields_dict.raw_tspl.$input;
+                if ($textarea) {
+                    $textarea.css({'min-height': '350px', 'font-family': 'monospace', 'line-height': '1.5'});
+                }
+            }, 100);
         }
 
         const container = wrapper.find('.tspl-preview-container')[0];
