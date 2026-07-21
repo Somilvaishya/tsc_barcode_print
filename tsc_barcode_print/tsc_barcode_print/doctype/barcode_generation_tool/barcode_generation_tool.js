@@ -30,7 +30,12 @@ frappe.ui.form.on('Barcode Generation Tool', {
         // Print button shown on submitted docs
         if (frm.doc.docstatus === 1) {
             frm.add_custom_button(__('Print Barcode'), () => {
-                open_print_dialog(frm);
+                if (window.QZBridge && window.QZBridge.print_dialog) {
+                    let doc_data = Object.assign({}, frm.doc);
+                    window.QZBridge.print_dialog(frm.doctype, frm.docname, doc_data);
+                } else {
+                    frappe.msgprint(__('QZBridge is not loaded.'));
+                }
             }).addClass('btn-primary');
         }
     },
